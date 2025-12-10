@@ -2,7 +2,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import requests
 
 st.set_page_config(page_title="CourtVision AI", layout="wide", page_icon="🏀")
 
@@ -21,63 +20,42 @@ st.title("CourtVision AI 🏀")
 st.subheader("Smart Predictions • NBA & EuroLeague")
 
 # ---------------------------
-# 1) Fetch NBA Data
+# 1) Shabihe-sazi Data (Offline)
 # ---------------------------
-def fetch_nba_games(days=3):
+def get_games():
     games = []
-    url_base = "https://www.balldontlie.io/api/v1/games?dates[]="
-    for i in range(days):
-        date_str = (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d")
-        try:
-            r = requests.get(url_base + date_str).json()
-            for g in r.get("data", []):
-                games.append({
-                    "Date": date_str,
-                    "League": "NBA",
-                    "Home": g["home_team"]["full_name"],
-                    "Away": g["visitor_team"]["full_name"],
-                    "Spread": -5,
-                    "Over/Under": 210,
-                    "Confidence": "92%"
-                })
-        except Exception as e:
-            print(f"Error fetching NBA: {e}")
-    return games
-
-# ---------------------------
-# 2) EuroLeague Data (Simulated)
-# ---------------------------
-def fetch_euroleague_games():
-    euro_games = [
-        ("Real Madrid", "FC Barcelona"),
-        ("Olympiacos", "Panathinaikos"),
-        ("Fenerbahce", "Anadolu Efes"),
-        ("Maccabi Tel Aviv", "Valencia Basket"),
-        ("EA7 Milan", "Panathinaikos"),
-        ("Paris Basketball", "Zalgiris Kaunas")
-    ]
-    games = []
-    for i, (home, away) in enumerate(euro_games):
-        date_str = (datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d")
+    # NBA 3 days
+    nba_teams = [("Lakers", "Celtics"), ("Heat", "Bucks"), ("Warriors", "Suns")]
+    for i, (home, away) in enumerate(nba_teams):
+        date = (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d")
         games.append({
-            "Date": date_str,
+            "Date": date,
+            "League": "NBA",
+            "Home": home,
+            "Away": away,
+            "Spread": -5 + i,
+            "Over/Under": 210 - i*2,
+            "Confidence": f"{92-i}%"
+        })
+    # EuroLeague 3 days
+    euro_teams = [("Real Madrid","FC Barcelona"), ("Olympiacos","Panathinaikos"), ("Fenerbahce","Anadolu Efes")]
+    for i, (home, away) in enumerate(euro_teams):
+        date = (datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d")
+        games.append({
+            "Date": date,
             "League": "EuroLeague",
             "Home": home,
             "Away": away,
-            "Spread": -4,
-            "Over/Under": 168,
-            "Confidence": "92%"
+            "Spread": -4 + i,
+            "Over/Under": 168 + i*2,
+            "Confidence": f"{91-i}%"
         })
-    return games
+    return pd.DataFrame(games)
+
+df = get_games()
 
 # ---------------------------
-# 3) Combine & DataFrame
-# ---------------------------
-all_games = fetch_nba_games() + fetch_euroleague_games()
-df = pd.DataFrame(all_games)
-
-# ---------------------------
-# 4) Date Filter
+# 2) Filter by Date
 # ---------------------------
 selected_date = st.date_input("Select Date", datetime.now())
 filtered_df = df[df["Date"] == selected_date.strftime("%Y-%m-%d")]
