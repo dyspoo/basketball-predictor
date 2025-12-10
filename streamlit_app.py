@@ -1,103 +1,112 @@
-# streamlit_app.py
 import streamlit as st
-import pandas as pd
-from datetime import datetime, timedelta
-import random
 
-st.set_page_config(page_title="CourtVision AI", layout="wide", page_icon="🏀")
-
-# --------------------------------
-# CSS STYLE (روشن مثل Digipay)
-# --------------------------------
-st.markdown(
-    """
-    <style>
-    .stApp { background-color: #ecf5ff; color: #000; font-family: 'Segoe UI', sans-serif;}
-    .card { background-color: #ffffff; padding: 22px; border-radius: 14px;
-            margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-            border-left: 6px solid #00bcd4; }
-    .card h3 { color: #0077ff; margin:0; font-weight: 700; }
-    .card p { color: #222; margin:0; font-weight: 500; font-size: 15px; }
-    </style>
-    """,
-    unsafe_allow_html=True,
+# --- Page Config ---
+st.set_page_config(
+    page_title="CourtVision AI",
+    layout="centered",
+    page_icon="🏀"
 )
 
+# --- Color Palette ---
+ACCENT = "#1DE9B6"     # turquoise
+SECOND = "#2979FF"     # blue
+LIME = "#C6FF00"       # lime green
+DARK = "#1A1A1A"       # blackish
+LIGHT = "#F5F5F5"      # light white
 
-# --------------------------------
-# CREATE REALISTIC UNIQUE GAMES
-# --------------------------------
-def generate_games_for_day():
-    nba_games = [
-        ("Lakers", "Celtics"),
-        ("Heat", "Bucks"),
-        ("Warriors", "Suns"),
-        ("Clippers", "Nuggets"),
-    ]
+# --- Custom CSS ---
+st.markdown(f"""
+    <style>
+        body {{
+            background-color: {LIGHT};
+            color: {DARK};
+            font-family: 'Arial', sans-serif;
+        }}
 
-    euro_games = [
-        ("Real Madrid", "Barcelona"),
-        ("Fenerbahce", "Anadolu Efes"),
-        ("Olympiacos", "Panathinaikos"),
-        ("Monaco", "Maccabi Tel Aviv"),
-    ]
+        .title {{
+            font-size: 34px;
+            font-weight: bold;
+            color: {SECOND};
+            text-align: center;
+            margin-bottom: 25px;
+        }}
 
-    all_games = nba_games + euro_games
+        .card {{
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            border-left: 6px solid {ACCENT};
+            box-shadow: 0 0 15px rgba(0,0,0,0.10);
+        }}
 
-    selected = random.sample(all_games, random.randint(2, 5))  # 2 تا 5 بازی واقعی در روز
+        .league {{
+            font-size: 20px;
+            font-weight: bold;
+            color: {SECOND};
+        }}
 
-    games = []
+        .match {{
+            font-size: 22px;
+            font-weight: bold;
+            color: {DARK};
+            margin-top: 6px;
+        }}
 
-    for (home, away) in selected:
-        spread = random.choice([-6, -5, -4, -3, -2, 2, 3, 4])
-        ov = random.choice([168, 170, 172, 210, 212, 214])
-        ov_type = random.choice(["Over", "Under"])
-        conf = random.randint(88, 97)
+        .label {{
+            font-size: 17px;
+            font-weight: bold;
+            color: {ACCENT};
+        }}
 
-        games.append({
-            "Home": home,
-            "Away": away,
-            "Spread": spread,
-            "OverUnder": f"{ov_type} {ov}",
-            "Confidence": conf
-        })
+        .confidence {{
+            font-size: 18px;
+            font-weight: bold;
+            color: {LIME};
+            margin-top: 8px;
+            display: block;
+        }}
+    </style>
+""", unsafe_allow_html=True)
 
-    df = pd.DataFrame(games)
-    df = df[df["Confidence"] >= 90]  # فقط بازی‌های دقت بالا
-
-    # حداکثر 3 بازی
-    if len(df) > 3:
-        df = df.sample(3)
-
-    return df
-
-
-# --------------------------------
-# DATE SELECTION
-# --------------------------------
-st.title("CourtVision AI 🏀")
-st.subheader("Smart Predictions • High Confidence Picks (90%+)")
-
-selected_date = st.date_input("Select Date", datetime.now())
-
-df = generate_games_for_day()
+# --- Page Title ---
+st.markdown("<div class='title'>🏀 CourtVision AI – Smart Predictions</div>", unsafe_allow_html=True)
 
 
-# --------------------------------
-# DISPLAY
-# --------------------------------
-if df.empty:
-    st.warning("No high-confidence games (90%+) found for this date.")
-else:
-    for _, row in df.iterrows():
-        st.markdown(
-            f"""
-            <div class="card">
-                <h3>{row['Home']} vs {row['Away']}</h3>
-                <p>Handicap: <b>{row['Home']} {row['Spread']}</b></p>
-                <p>Over/Under: <b>{row['OverUnder']}</b></p>
-                <p>Confidence: <b>{row['Confidence']}%</b></p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+# --- Prediction Data ---
+games = [
+    {
+        "league": "EuroLeague",
+        "match": "Fenerbahce vs Anadolu Efes",
+        "handicap": "Fenerbahce -2",
+        "over_under": "Under 172",
+        "confidence": "95%"
+    },
+    {
+        "league": "NBA",
+        "match": "Heat vs Bucks",
+        "handicap": "Heat +4",
+        "over_under": "Under 214",
+        "confidence": "93%"
+    },
+    {
+        "league": "NBA",
+        "match": "Lakers vs Celtics",
+        "handicap": "Lakers +4",
+        "over_under": "Under 170",
+        "confidence": "96%"
+    }
+]
+
+# --- Display Predictions ---
+for g in games:
+    st.markdown(f"""
+        <div class='card'>
+            <div class='league'>{g['league']}</div>
+            <div class='match'>{g['match']}</div>
+            <br>
+            <span class='label'>Handicap:</span> {g['handicap']}<br>
+            <span class='label'>Over/Under:</span> {g['over_under']}<br>
+            <span class='confidence'>Confidence: {g['confidence']}</span>
+        </div>
+    """, unsafe_allow_html=True)
