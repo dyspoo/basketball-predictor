@@ -24,44 +24,55 @@ st.title("🏀 Prédictions NBA & EuroLeague - Sélection intelligente (>90% con
 
 today = datetime.date.today()
 
-# --- NBA réel ---
+# --- NBA réel avec gestion des erreurs ---
 def nba_games():
     url = f"https://www.balldontlie.io/api/v1/games?dates[]={today}"
-    r = requests.get(url).json()
-    jeux = []
-    for g in r["data"]:
-        jeux.append({
-            "Ligue": "NBA",
-            "Home": g["home_team"]["full_name"],
-            "Away": g["visitor_team"]["full_name"]
-        })
-    return jeux
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        jeux = []
+        for g in data.get("data", []):
+            jeux.append({
+                "Ligue": "NBA",
+                "Home": g["home_team"]["full_name"],
+                "Away": g["visitor_team"]["full_name"]
+            })
+        return jeux
+    except (requests.exceptions.RequestException, ValueError):
+        st.warning("Impossible de récupérer les matchs NBA pour aujourd'hui.")
+        return []
 
-# --- EuroLeague réel via scraping ESPN ---
+# --- EuroLeague réel avec gestion des erreurs ---
 def euro_games():
     url = "https://www.espn.com/basketball/schedule/_/league/EL"
-    r = requests.get(url)
-    soup = BeautifulSoup(r.text, "html.parser")
     jeux = []
-    rows = soup.find_all("tr", class_="Table__TR")
-    for row in rows[:10]:  # on prend max 10 matchs pour l'exemple
-        teams = row.find_all("td", class_="Table__TD")
-        if len(teams) >= 2:
-            home = teams[0].text.strip()
-            away = teams[1].text.strip()
-            if home and away:
-                jeux.append({
-                    "Ligue": "EuroLeague",
-                    "Home": home,
-                    "Away": away
-                })
-    return jeux
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        rows = soup.find_all("tr", class_="Table__TR")
+        for row in rows[:10]:  # on prend max 10 matchs
+            teams = row.find_all("td", class_="Table__TD")
+            if len(teams) >= 2:
+                home = teams[0].text.strip()
+                away = teams[1].text.strip()
+                if home and away:
+                    jeux.append({
+                        "Ligue": "EuroLeague",
+                        "Home": home,
+                        "Away": away
+                    })
+        return jeux
+    except Exception:
+        st.warning("Impossible de récupérer les matchs EuroLeague pour aujourd'hui.")
+        return []
 
-# --- Prédictions AI (simulation) ---
+# --- Prédictions AI simulées (>90% confiance) ---
 def ai_prediction():
     over_under = random.randint(190, 230)
     handicap = random.randint(-12,12)
-    confidence = random.randint(90,95)  # toujours >90%
+    confidence = random.randint(90,95)
     return {
         "Over/Under": f"Over {over_under}",
         "Handicap": f"{handicap:+}",
