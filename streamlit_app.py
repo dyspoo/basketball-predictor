@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import requests
+import random
 
 st.set_page_config(page_title="CourtVision AI", layout="wide", page_icon="🏀")
 
@@ -26,28 +26,52 @@ st.title("CourtVision AI 🏀")
 st.subheader("Smart Predictions • NBA & EuroLeague")
 
 # ---------------------------
-# داده‌های شبیه‌سازی شده
+# 1) داده‌های شبیه‌سازی شده با Over/Under و Spread مشخص
 # ---------------------------
-def get_games():
+def generate_games():
     games = []
-    # NBA
+    # NBA نمونه
     nba_teams = [("Lakers", "Celtics"), ("Heat", "Bucks"), ("Warriors", "Suns")]
     for i, (home, away) in enumerate(nba_teams):
         date = (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d")
-        games.append({"Date": date,"League":"NBA","Home":home,"Away":away,"Spread":-5,"Over/Under":210,"Confidence":"92%"})
-        games.append({"Date": date,"League":"NBA","Home":home,"Away":away,"Spread":-3,"Over/Under":208,"Confidence":"91%"})
-    # EuroLeague
+        for _ in range(2):  # هر تیم 2-3 پیش‌بینی
+            spread = random.choice([-5, -3, 4])
+            over_under_val = random.choice([208, 210, 212])
+            over_under_type = random.choice(["Over", "Under"])
+            confidence = random.choice(["91%", "92%", "95%"])
+            games.append({
+                "Date": date,
+                "League": "NBA",
+                "Home": home,
+                "Away": away,
+                "Spread": spread,
+                "OverUnder": f"{over_under_type} {over_under_val}",
+                "Confidence": confidence
+            })
+    # EuroLeague نمونه
     euro_teams = [("Real Madrid","FC Barcelona"), ("Olympiacos","Panathinaikos"), ("Fenerbahce","Anadolu Efes")]
     for i, (home, away) in enumerate(euro_teams):
         date = (datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d")
-        games.append({"Date": date,"League":"EuroLeague","Home":home,"Away":away,"Spread":-4,"Over/Under":168,"Confidence":"92%"})
-        games.append({"Date": date,"League":"EuroLeague","Home":home,"Away":away,"Spread":-3,"Over/Under":170,"Confidence":"91%"})
+        for _ in range(2):
+            spread = random.choice([-4, -3, 5])
+            over_under_val = random.choice([168, 170, 172])
+            over_under_type = random.choice(["Over", "Under"])
+            confidence = random.choice(["91%", "92%", "94%"])
+            games.append({
+                "Date": date,
+                "League": "EuroLeague",
+                "Home": home,
+                "Away": away,
+                "Spread": spread,
+                "OverUnder": f"{over_under_type} {over_under_val}",
+                "Confidence": confidence
+            })
     return pd.DataFrame(games)
 
-df = get_games()
+df = generate_games()
 
 # ---------------------------
-# فیلتر بر اساس تاریخ
+# 2) فیلتر تاریخ (امروز یا نزدیک‌ترین)
 # ---------------------------
 selected_date = st.date_input("Select Date", datetime.now())
 if not any(df["Date"] == selected_date.strftime("%Y-%m-%d")):
@@ -58,14 +82,16 @@ else:
     filtered_df = df[df["Date"] == selected_date.strftime("%Y-%m-%d")]
 
 # ---------------------------
-# نمایش کارت‌ها
+# 3) نمایش کارت‌ها
 # ---------------------------
 for idx, row in filtered_df.iterrows():
     st.markdown(
         f"""
         <div class="card">
             <h3>{row['League']} | {row['Home']} vs {row['Away']}</h3>
-            <p>Spread: {row['Spread']} | Over/Under: {row['Over/Under']} | Confidence: {row['Confidence']}</p>
+            <p>Handicap: {row['Home']} {row['Spread']}</p>
+            <p>Over/Under: {row['OverUnder']}</p>
+            <p>Confidence: {row['Confidence']}</p>
         </div>
         """, unsafe_allow_html=True
     )
