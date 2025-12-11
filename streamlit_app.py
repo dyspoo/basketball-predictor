@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import pandas as pd
 import datetime
-import random
 
 # --- Page Config ---
 st.set_page_config(
@@ -36,47 +35,46 @@ body {{ background-color: {BG}; color: {TEXT}; font-family: 'Arial', sans-serif;
 
 # --- Title ---
 st.markdown("<div class='title'>🏀 CourtVision AI</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>NBA & EuroLeague • High Accuracy AI Predictions</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>NBA & EuroLeague • Real-Time Data</div>", unsafe_allow_html=True)
 
 # --- Date Picker ---
 selected_date = st.date_input("📅 Select Date", datetime.date.today())
-st.write(f"### 📌 Predictions for: **{selected_date.strftime('%Y/%m/%d')}**")
+st.write(f"### 📌 Matches for: **{selected_date.strftime('%Y/%m/%d')}**")
 st.write("")
 
-# --- Sample Data: Replace with API for real ---
-nba_teams = [
-    "Lakers", "Celtics", "Heat", "Bucks", "Suns", "Thunder"
-]
-euro_teams = [
-    "Fenerbahce", "Anadolu Efes", "Real Madrid", "Barcelona",
-    "Maccabi Tel Aviv", "Valencia Basket"
-]
+# --- API Setup ---
+API_URL = "https://allsportsapi2.p.rapidapi.com/api/basketball/event/date/{date}"
+RAPIDAPI_KEY = "YOUR_RAPIDAPI_KEY"  # <-- اینجا کلید خودت رو بذار
 
-def generate_predictions(teams):
-    games = []
-    for i in range(0, len(teams)-1, 2):
-        home = teams[i]
-        away = teams[i+1]
-        # Random but high confidence >90%
-        confidence = random.randint(90, 98)
-        over_under = random.choice(["Over", "Under"]) + f" {random.randint(160, 220)}"
-        handicap = random.choice([home, away])
-        # If home team selected, +ve, else -ve
-        if handicap == home:
-            handicap_str = f"{home} +{random.randint(1,5)}"
-        else:
-            handicap_str = f"{away} -{random.randint(1,5)}"
-        games.append({
-            "league": "NBA" if home in nba_teams else "EuroLeague",
-            "match": f"{home} vs {away}",
-            "handicap": handicap_str,
-            "over_under": over_under,
-            "confidence": f"{confidence}%"
-        })
-    return games
+headers = {
+    "x-rapidapi-host": "allsportsapi2.p.rapidapi.com",
+    "x-rapidapi-key": RAPIDAPI_KEY
+}
+
+# --- Fetch Data from API ---
+def get_games(date):
+    url = API_URL.format(date=date.strftime("%Y-%m-%d"))
+    try:
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        events = data.get("result", [])
+        games_list = []
+        for e in events:
+            games_list.append({
+                "league": e.get("league_name", "Unknown"),
+                "match": f"{e.get('home_team', '')} vs {e.get('away_team', '')}",
+                "date": e.get("event_date", ""),
+                "time": e.get("event_time", ""),
+                "score": f"{e.get('home_score', '?')} - {e.get('away_score', '?')}",
+                "status": e.get("event_status", "Upcoming")
+            })
+        return games_list
+    except Exception as ex:
+        st.error(f"Error fetching data: {ex}")
+        return []
 
 # --- Get Games ---
-games = generate_predictions(nba_teams) + generate_predictions(euro_teams)
+games = get_games(selected_date)
 
 # --- Display Cards ---
 for g in games:
@@ -84,9 +82,8 @@ for g in games:
     <div class='card'>
         <div class='league'>{g['league']}</div>
         <div class='match'>{g['match']}</div>
-        <br>
-        <span class='label'>Handicap:</span> {g['handicap']}<br>
-        <span class='label'>Over/Under:</span> {g['over_under']}<br>
-        <span class='confidence'>Confidence: {g['confidence']}</span>
+        <span class='label'>Date & Time:</span> {g['date']} {g['time']}<br>
+        <span class='label'>Score:</span> {g['score']}<br>
+        <span class='label'>Status:</span> {g['status']}<br>
     </div>
     """, unsafe_allow_html=True)
