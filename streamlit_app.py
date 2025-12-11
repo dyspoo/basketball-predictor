@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import pandas as pd
 import datetime
 
 # --- Page Config ---
@@ -11,12 +10,12 @@ st.set_page_config(
 )
 
 # --- Colors ---
-BG = "#A7FFEB"       # turquoise background
-TEXT = "#000000"     # black text
-CARD_BG = "#FFFFFF"  # white cards
-ACCENT = "#00838F"   # teal
-ACCENT2 = "#004D40"  # dark teal
-CONFIDENCE_COLOR = "#FFD700"  # gold
+BG = "#A7FFEB"
+TEXT = "#000000"
+CARD_BG = "#FFFFFF"
+ACCENT = "#00838F"
+ACCENT2 = "#004D40"
+CONFIDENCE_COLOR = "#FFD700"
 
 # --- Custom CSS ---
 st.markdown(f"""
@@ -44,20 +43,21 @@ st.write("")
 
 # --- API Setup ---
 API_URL = "https://allsportsapi2.p.rapidapi.com/api/basketball/event/date/{date}"
-RAPIDAPI_KEY = "YOUR_RAPIDAPI_KEY"  # <-- اینجا کلید خودت رو بذار
+RAPIDAPI_KEY = "b066b13c4dmshf67fffdacdc8914p13ae78jsn8ccb681b46fb"  # کلید تو
 
 headers = {
     "x-rapidapi-host": "allsportsapi2.p.rapidapi.com",
     "x-rapidapi-key": RAPIDAPI_KEY
 }
 
-# --- Fetch Data from API ---
+# --- Fetch Games ---
 def get_games(date):
     url = API_URL.format(date=date.strftime("%Y-%m-%d"))
     try:
         response = requests.get(url, headers=headers)
         data = response.json()
         events = data.get("result", [])
+
         games_list = []
         for e in events:
             games_list.append({
@@ -66,24 +66,34 @@ def get_games(date):
                 "date": e.get("event_date", ""),
                 "time": e.get("event_time", ""),
                 "score": f"{e.get('home_score', '?')} - {e.get('away_score', '?')}",
-                "status": e.get("event_status", "Upcoming")
+                "status": e.get("event_status", "Upcoming"),
+                "handicap": e.get("handicap", "Not Available"),
+                "over_under": e.get("over_under", "Not Available")
             })
         return games_list
+
     except Exception as ex:
-        st.error(f"Error fetching data: {ex}")
+        st.error(f"❌ API Error: {ex}")
         return []
 
 # --- Get Games ---
 games = get_games(selected_date)
 
 # --- Display Cards ---
-for g in games:
-    st.markdown(f"""
-    <div class='card'>
-        <div class='league'>{g['league']}</div>
-        <div class='match'>{g['match']}</div>
-        <span class='label'>Date & Time:</span> {g['date']} {g['time']}<br>
-        <span class='label'>Score:</span> {g['score']}<br>
-        <span class='label'>Status:</span> {g['status']}<br>
-    </div>
-    """, unsafe_allow_html=True)
+if not games:
+    st.warning("❗ No games found for this date.")
+else:
+    for g in games:
+        st.markdown(f"""
+        <div class='card'>
+            <div class='league'>{g['league']}</div>
+            <div class='match'>{g['match']}</div>
+
+            <span class='label'>Date & Time:</span> {g['date']} {g['time']}<br>
+            <span class='label'>Score:</span> {g['score']}<br>
+            <span class='label'>Status:</span> {g['status']}<br>
+
+            <span class='label'>Handicap:</span> {g['handicap']}<br>
+            <span class='label'>Over/Under:</span> {g['over_under']}<br>
+        </div>
+        """, unsafe_allow_html=True)
